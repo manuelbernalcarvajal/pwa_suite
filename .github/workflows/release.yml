@@ -1,0 +1,40 @@
+name: Build and Sign Nextcloud App Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Se activa SOLO cuando creas una etiqueta como v1.0.0, v1.0.1, etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    # Condición de seguridad: Solo se ejecuta en TU repositorio oficial, no en forks de terceros
+    if: github.repository_owner == 'manuelbernalcarvajal'
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: ctype, curl, dom, fileinfo, gd, iconv, json, mbstring, openssl, posix, session, simplexml, xml, xmlreader, xmlwriter, zip
+          coverage: none
+
+      - name: Empaquetar y Firmar App con la herramienta oficial de Nextcloud
+        uses: nextcloud/action-app-release@v1
+        with:
+          app-name: pwa_suite
+          private-key: ${{ secrets.NC_PRIVATE_KEY }}
+          certificate: ${{ secrets.NC_CERTIFICATE }}
+
+      - name: Publicar Release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/artifacts/pwa_suite.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
