@@ -14,21 +14,25 @@ AGPL-3.0
 
 ```
 pwa_suite/
-├── LICENSE                    (AGPL-3.0-or-later)
+├── LICENSE
 ├── README.md
 ├── appinfo/
-│   ├── info.xml               (Metadatos de la app para Nextcloud)
-│   └── routes.php             (Rutas para manifest.json, sw.js y API de admin)
+│   ├── info.xml
+│   └── routes.php
+├── css/
+│   └── admin-style.css       <-- [NUEVO] Estilos de la UI de administración
 ├── js/
-│   └── pwa-register.js        (Script inyectado que registra el Service Worker)
+│   ├── admin-script.js       <-- [NUEVO] Peticiones AJAX del panel
+│   └── pwa-register.js
 ├── lib/
 │   ├── AppInfo/
-│   │   └── Application.php    (Inyecta las etiquetas <link rel="manifest"> en el <head>)
+│   │   └── Application.php
 │   ├── Controller/
-│   │   ├── PwaController.php  (Genera el manifest.json y sw.js dinámicos)
-│   │   └── AdminController.php(Guarda la configuración del admin)
+│   │   ├── AdminController.php
+│   │   └── PwaController.php
 │   └── Settings/
-│       └── AdminSettings.php  (Registra la pestaña en Configuración > Administración)
+│       └── AdminSettings.php
 └── templates/
-    └── admin.php              (Interfaz HTML/Vue con los selectores y campos)
+    └── admin.php
+
 ```
