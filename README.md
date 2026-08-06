@@ -1,4 +1,5 @@
 # pwa_suite
+```
 pwa_suite/
 ├── LICENSE                    (AGPL-3.0-or-later)
 ├── README.md
@@ -17,3 +18,4 @@ pwa_suite/
 │       └── AdminSettings.php  (Registra la pestaña en Configuración > Administración)
 └── templates/
     └── admin.php              (Interfaz HTML/Vue con los selectores y campos)
+```
