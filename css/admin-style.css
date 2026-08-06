@@ -1,0 +1,28 @@
+#pwa-suite-admin {
+    padding: 10px 0;
+}
+
+#pwa-suite-admin form p {
+    margin-bottom: 20px;
+}
+
+#pwa-suite-admin label {
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 6px;
+    color: var(--color-main-text);
+}
+
+#pwa-suite-admin .pwa-input,
+#pwa-suite-admin select {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 12px;
+    border-radius: var(--border-radius, 8px);
+}
+
+#pwa-status-message {
+    margin-left: 15px;
+    font-weight: 600;
+    display: inline-block;
+}
