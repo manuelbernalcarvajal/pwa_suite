@@ -5,6 +5,7 @@ namespace OCA\PwaSuite\Settings;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Settings\ISettings;
 use OCP\IConfig;
+use OCP\Util;
 
 class AdminSettings implements ISettings {
 
@@ -15,6 +16,8 @@ class AdminSettings implements ISettings {
     }
 
     public function getForm(): TemplateResponse {
+        Util::addScript('pwa_suite', 'admin-script');
+
         $parameters = [
             'appName' => $this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA'),
             'themeColor' => $this->config->getAppValue('pwa_suite', 'theme_color', '#0082c9'),
