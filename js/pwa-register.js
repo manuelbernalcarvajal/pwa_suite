@@ -6,7 +6,7 @@
     }
     const link = document.createElement('link');
     link.rel = 'manifest';
-    link.href = OC.generateUrl('/apps/pwa_suite/manifest');
+    link.href = OC.generateUrl('/apps/pwa_suite/manifest.json');
     document.head.appendChild(link);
 
     // 2. Registrar el Service Worker
