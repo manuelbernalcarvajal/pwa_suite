@@ -20,11 +20,22 @@ class AdminController extends Controller {
 
     #[AdminRequired]
     #[NoCSRFRequired]
-    public function saveConfig(string $appName, string $themeColor, string $bgColor, string $displayMode): DataResponse {
+    public function saveConfig(
+        string $appName,
+        string $themeColor,
+        string $bgColor,
+        string $displayMode,
+        string $advancedMode = 'no',
+        string $customManifest = '',
+        string $customSw = ''
+    ): DataResponse {
         $this->config->setAppValue('pwa_suite', 'app_name', $appName);
         $this->config->setAppValue('pwa_suite', 'theme_color', $themeColor);
         $this->config->setAppValue('pwa_suite', 'bg_color', $bgColor);
         $this->config->setAppValue('pwa_suite', 'display_mode', $displayMode);
+        $this->config->setAppValue('pwa_suite', 'advanced_mode', $advancedMode);
+        $this->config->setAppValue('pwa_suite', 'custom_manifest', $customManifest);
+        $this->config->setAppValue('pwa_suite', 'custom_sw', $customSw);
 
         return new DataResponse(['status' => 'success', 'message' => 'Configuración PWA guardada']);
     }
