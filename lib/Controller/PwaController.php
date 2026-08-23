@@ -70,6 +70,9 @@ class PwaController extends Controller {
 
         $response = new DataResponse($swCode);
         $response->addHeader('Content-Type', 'application/javascript; charset=utf-8');
+        // Cabecera que autoriza al SW a controlar todo el dominio desde la raíz:
+        $response->addHeader('Service-Worker-Allowed', '/');
+        
         return $response;
     }
 }
