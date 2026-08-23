@@ -1,49 +1,53 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('pwa-suite-settings-form');
-    const statusMsg = document.getElementById('pwa-status-message');
+    const toggle = document.getElementById('pwa-advanced-toggle');
+    const advancedSection = document.getElementById('pwa-advanced-section');
+    const saveBtn = document.getElementById('pwa-save-btn');
+    const msg = document.getElementById('pwa-save-msg');
 
-    if (!form) return;
+    // Manejar visibilidad del panel experto
+    if (toggle && advancedSection) {
+        toggle.addEventListener('change', () => {
+            advancedSection.style.display = toggle.checked ? 'block' : 'none';
+        });
+    }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        statusMsg.textContent = 'Guardando...';
-        statusMsg.style.color = 'var(--color-primary-element, #0082c9)';
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            msg.textContent = 'Guardando...';
+            msg.style.color = 'var(--color-text-maxcontrast)';
 
-        const appName = document.getElementById('pwa_app_name').value;
-        const themeColor = document.getElementById('pwa_theme_color').value;
-        const bgColor = document.getElementById('pwa_bg_color').value;
-        const displayMode = document.getElementById('pwa_display_mode').value;
+            const payload = {
+                appName: document.getElementById('pwa-app-name').value,
+                themeColor: document.getElementById('pwa-theme-color').value,
+                bgColor: document.getElementById('pwa-bg-color').value,
+                displayMode: document.getElementById('pwa-display-mode').value,
+                advancedMode: toggle && toggle.checked ? 'yes' : 'no',
+                customManifest: document.getElementById('pwa-custom-manifest').value,
+                customSw: document.getElementById('pwa-custom-sw').value
+            };
 
-        // Genera la URL del endpoint definido en routes.php
-        const url = OC.generateUrl('/apps/pwa_suite/api/v1/admin/config');
-
-        try {
-            const response = await fetch(url, {
+            fetch(OC.generateUrl('/apps/pwa_suite/api/v1/admin/config'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'requesttoken': OC.requestToken // Protección CSRF nativa de Nextcloud
+                    'requesttoken': OC.requestToken
                 },
-                body: JSON.stringify({
-                    appName: appName,
-                    themeColor: themeColor,
-                    bgColor: bgColor,
-                    displayMode: displayMode
-                })
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Error al guardar');
+                return res.json();
+            })
+            .then(() => {
+                msg.textContent = '¡Ajustes guardados con éxito!';
+                msg.style.color = '#46ba61';
+                setTimeout(() => { msg.textContent = ''; }, 3500);
+            })
+            .catch(err => {
+                console.error(err);
+                msg.textContent = 'Error al guardar los ajustes.';
+                msg.style.color = '#e9322d';
             });
-
-            if (response.ok) {
-                statusMsg.textContent = '¡Configuración guardada con éxito!';
-                statusMsg.style.color = 'var(--color-success, #46ba6f)';
-            } else {
-                statusMsg.textContent = 'Error al guardar la configuración.';
-                statusMsg.style.color = 'var(--color-error, #d9534f)';
-            }
-        } catch (err) {
-            console.error('PWA Suite Admin Error:', err);
-            statusMsg.textContent = 'Error de conexión con el servidor.';
-            statusMsg.style.color = 'var(--color-error, #d9534f)';
-        }
-    });
+        });
+    }
 });
