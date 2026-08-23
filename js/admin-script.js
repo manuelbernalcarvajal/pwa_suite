@@ -1,20 +1,21 @@
 (function () {
-    function initPwaAdmin() {
-        const toggle = document.getElementById('pwa-advanced-toggle');
-        const advancedSection = document.getElementById('pwa-advanced-section');
-        const saveBtn = document.getElementById('pwa-save-btn');
-        const msg = document.getElementById('pwa-save-msg');
-
-        if (!saveBtn) return;
-
-        if (toggle && advancedSection) {
-            toggle.addEventListener('change', () => {
-                advancedSection.style.display = toggle.checked ? 'block' : 'none';
-            });
+    // Escuchar el cambio en el interruptor de modo experto
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'pwa-advanced-toggle') {
+            const section = document.getElementById('pwa-advanced-section');
+            if (section) {
+                section.style.display = e.target.checked ? 'block' : 'none';
+            }
         }
+    });
 
-        saveBtn.addEventListener('click', (e) => {
+    // Escuchar el clic del botón guardar
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.id === 'pwa-save-btn') {
             e.preventDefault();
+            const msg = document.getElementById('pwa-save-msg');
+            const toggle = document.getElementById('pwa-advanced-toggle');
+
             if (msg) {
                 msg.textContent = 'Guardando...';
                 msg.style.color = 'var(--color-text-maxcontrast, #fff)';
@@ -39,7 +40,7 @@
                 body: JSON.stringify(payload)
             })
             .then(res => {
-                if (!res.ok) throw new Error('Error HTTP ' + res.status);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
             })
             .then(() => {
@@ -50,18 +51,12 @@
                 }
             })
             .catch(err => {
-                console.error('[PWA Suite Error]', err);
+                console.error('[PWA Suite]', err);
                 if (msg) {
                     msg.textContent = 'Error al guardar: ' + err.message;
                     msg.style.color = '#e9322d';
                 }
             });
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPwaAdmin);
-    } else {
-        initPwaAdmin();
-    }
+        }
+    });
 })();
