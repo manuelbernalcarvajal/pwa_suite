@@ -29,7 +29,7 @@ class AdminSettings implements ISettings {
     }
 
     public function getSection(): string {
-        return 'admin';
+        return 'theming';
     }
 
     public function getPriority(): int {
