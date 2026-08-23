@@ -4,6 +4,8 @@ namespace OCA\PwaSuite\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Http\Attribute\AdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\IRequest;
 use OCP\IConfig;
 
@@ -16,9 +18,8 @@ class AdminController extends Controller {
         $this->config = $config;
     }
 
-    /**
-     * @NoCSRFRequired (Nextcloud maneja el token internamente si se pasa por cabecera)
-     */
+    #[AdminRequired]
+    #[NoCSRFRequired]
     public function saveConfig(string $appName, string $themeColor, string $bgColor, string $displayMode): DataResponse {
         $this->config->setAppValue('pwa_suite', 'app_name', $appName);
         $this->config->setAppValue('pwa_suite', 'theme_color', $themeColor);
