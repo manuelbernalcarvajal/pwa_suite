@@ -3,7 +3,7 @@
     <id>pwa_suite</id>
     <name>PWA Suite &amp; Customizer</name>
     <namespace>PwaSuite</namespace>
-    <description>Transforma tu instancia de Nextcloud en una PWA totalmente personalizable.</description>
+    <description>Transforma tu instancia de Nextcloud en una PWA totalmente personalizable. Los ajustes salen en el apartado tema o theming.</description>
     <version>1.0.0</version>
     <licence>agpl</licence>
     <author>Manuel Bernal Carvajal</author>
