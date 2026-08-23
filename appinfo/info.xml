@@ -5,7 +5,7 @@
     <description>Transforma tu instancia de Nextcloud en una PWA totalmente personalizable.</description>
     <version>1.0.0</version>
     <licence>agpl</licence>
-    <author>Tu Nombre / Firma</author>
+    <author>Manuel Bernal Carvajal</author>
     <category>customization</category>
 
     <dependencies>
