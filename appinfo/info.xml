@@ -3,7 +3,13 @@
     <id>pwa_suite</id>
     <name>PWA Suite &amp; Customizer</name>
     <summary>Personalizador y gestor de PWA para Nextcloud</summary>
-    <description><![CDATA[Permite configurar Web App Manifest y Service Worker personalizados.]]></description>
+    <description><![CDATA[
+    PWA Suite te permite personalizar por completo la experiencia de Progressive Web App (PWA) en tu instancia de Nextcloud:
+    
+    - Configuración personalizada del archivo manifest.json (nombre, iconos, colores de tema y fondo).
+    - Registro y control de Service Worker personalizado.
+    - Optimización de la experiencia de instalación en dispositivos móviles y de escritorio.
+    ]]></description>
     <version>1.0.2</version>
     <licence>agpl</licence>
     <author>Manuel Bernal Carvajal</author>
