@@ -4,18 +4,50 @@ namespace OCA\PwaSuite\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Http\StreamResponse;
+use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IConfig;
+use OCP\Files\IAppData;
+use OCP\Util;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class PwaController extends Controller {
 
     private IConfig $config;
+    private IAppData $appData;
 
-    public function __construct(string $appName, IRequest $request, IConfig $config) {
+    public function __construct(string $appName, IRequest $request, IConfig $config, IAppData $appData) {
         parent::__construct($appName, $request);
         $this->config = $config;
+        $this->appData = $appData;
+    }
+
+    /**
+     * @NoCSRFRequired
+     * @PublicPage
+     */
+    #[PublicPage]
+    #[NoCSRFRequired]
+    public function getIcon(): mixed {
+        $hasCustom = $this->config->getAppValue('pwa_suite', 'has_custom_icon', 'no');
+
+        if ($hasCustom === 'yes') {
+            try {
+                $folder = $this->appData->getFolder('icons');
+                $file = $folder->getFile('app-icon.png');
+                $response = new DataResponse($file->getContent());
+                $response->addHeader('Content-Type', 'image/png');
+                $response->addHeader('Cache-Control', 'public, max-age=604800');
+                return $response;
+            } catch (\Exception $e) {
+                // Fallback si el archivo no existe
+            }
+        }
+
+        // Redirección al icono por defecto del tema si no hay custom
+        return new RedirectResponse('/apps/theming/icon?v=0');
     }
 
     /**
@@ -37,10 +69,13 @@ class PwaController extends Controller {
             }
         }
 
-        $appName = $this->config->getAppValue('pwa_suite', 'app_name', 'Bcloud WorkSuite');
+        $appName = $this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA');
         $themeColor = $this->config->getAppValue('pwa_suite', 'theme_color', '#181818');
         $bgColor = $this->config->getAppValue('pwa_suite', 'bg_color', '#181818');
         $displayMode = $this->config->getAppValue('pwa_suite', 'display_mode', 'standalone');
+        $iconVersion = $this->config->getAppValue('pwa_suite', 'icon_version', '1');
+
+        $iconUrl = Util::linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
 
         $manifest = [
             'id' => 'nextcloud-custom-pwa',
@@ -56,20 +91,14 @@ class PwaController extends Controller {
             'theme_color' => $themeColor,
             'icons' => [
                 [
-                    'src' => '/apps/theming/icon?v=0',
+                    'src' => $iconUrl,
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'any maskable'
                 ],
                 [
-                    'src' => '/apps/theming/favicon?v=0',
+                    'src' => $iconUrl,
                     'sizes' => '192x192',
-                    'type' => 'image/png',
-                    'purpose' => 'any'
-                ],
-                [
-                    'src' => '/core/img/favicon.png',
-                    'sizes' => '64x64',
                     'type' => 'image/png',
                     'purpose' => 'any'
                 ]
@@ -78,7 +107,7 @@ class PwaController extends Controller {
                 [
                     'name' => 'Archivos',
                     'url' => '/apps/files/',
-                    'icons' => [['src' => '/apps/theming/icon?v=0', 'sizes' => '512x512']]
+                    'icons' => [['src' => $iconUrl, 'sizes' => '512x512']]
                 ]
             ]
         ];
@@ -105,7 +134,7 @@ class PwaController extends Controller {
             return $response;
         }
 
-        $appName = addslashes($this->config->getAppValue('pwa_suite', 'app_name', 'Bcloud WorkSuite'));
+        $appName = addslashes($this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA'));
         $themeColor = addslashes($this->config->getAppValue('pwa_suite', 'theme_color', '#181818'));
         $bgColor = addslashes($this->config->getAppValue('pwa_suite', 'bg_color', '#181818'));
 
@@ -142,25 +171,48 @@ self.addEventListener('fetch', (e) => {
     }
 });
 
-// Soporte unificado de Notificaciones Push de Nextcloud
 self.addEventListener('push', (e) => {
-    let d = { title: '{$appName}', body: 'Nueva notificación' };
+    let title = '{$appName}';
+    let options = {
+        icon: '/apps/pwa_suite/icon',
+        badge: '/apps/pwa_suite/icon',
+        data: { url: '/' }
+    };
     if (e.data) {
-        try { d = e.data.json(); } catch(err) { d.body = e.data.text(); }
+        try {
+            const json = e.data.json();
+            title = json.title || title;
+            options.body = json.body || '';
+            if (json.url) options.data.url = json.url;
+        } catch (err) {
+            const text = e.data.text();
+            const lines = text.split('\\n');
+            if (lines.length > 1) {
+                title = lines[0];
+                options.body = lines.slice(1).join('\\n');
+            } else {
+                options.body = text;
+            }
+        }
     }
-    e.waitUntil(
-        self.registration.showNotification(d.title || '{$appName}', {
-            body: d.body || '',
-            icon: '/apps/theming/icon?v=0',
-            badge: '/apps/theming/icon?v=0',
-            data: { url: d.url || '/' }
-        })
-    );
+    e.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (e) => {
     e.notification.close();
-    e.waitUntil(clients.openWindow(e.notification.data?.url || '/'));
+    const targetUrl = e.notification.data?.url || '/';
+    e.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            for (let client of windowClients) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
+        })
+    );
 });
 JS;
 
