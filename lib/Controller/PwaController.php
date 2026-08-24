@@ -4,12 +4,11 @@ namespace OCA\PwaSuite\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
-use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 use OCP\Files\IAppData;
-use OCP\Util;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
@@ -17,11 +16,13 @@ class PwaController extends Controller {
 
     private IConfig $config;
     private IAppData $appData;
+    private IURLGenerator $urlGenerator;
 
-    public function __construct(string $appName, IRequest $request, IConfig $config, IAppData $appData) {
+    public function __construct(string $appName, IRequest $request, IConfig $config, IAppData $appData, IURLGenerator $urlGenerator) {
         parent::__construct($appName, $request);
         $this->config = $config;
         $this->appData = $appData;
+        $this->urlGenerator = $urlGenerator;
     }
 
     /**
@@ -42,11 +43,10 @@ class PwaController extends Controller {
                 $response->addHeader('Cache-Control', 'public, max-age=604800');
                 return $response;
             } catch (\Exception $e) {
-                // Fallback si el archivo no existe
+                // Fallback si no se encuentra el archivo
             }
         }
 
-        // Redirección al icono por defecto del tema si no hay custom
         return new RedirectResponse('/apps/theming/icon?v=0');
     }
 
@@ -75,7 +75,7 @@ class PwaController extends Controller {
         $displayMode = $this->config->getAppValue('pwa_suite', 'display_mode', 'standalone');
         $iconVersion = $this->config->getAppValue('pwa_suite', 'icon_version', '1');
 
-        $iconUrl = Util::linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
+        $iconUrl = $this->urlGenerator->linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
 
         $manifest = [
             'id' => 'nextcloud-custom-pwa',
