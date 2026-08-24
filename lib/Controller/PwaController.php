@@ -18,13 +18,17 @@ class PwaController extends Controller {
         $this->config = $config;
     }
 
+    /**
+     * @NoCSRFRequired
+     * @PublicPage
+     */
     #[PublicPage]
     #[NoCSRFRequired]
     public function getManifest(): DataResponse {
         $advancedMode = $this->config->getAppValue('pwa_suite', 'advanced_mode', 'no');
         $customManifest = $this->config->getAppValue('pwa_suite', 'custom_manifest', '');
 
-        // Si el modo experto está activo y el JSON es válido, se sirve directamente
+        // 1. Si el usuario activó el modo experto y escribió un JSON válido
         if ($advancedMode === 'yes' && !empty(trim($customManifest))) {
             $decoded = json_decode($customManifest, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -34,17 +38,17 @@ class PwaController extends Controller {
             }
         }
 
-        // Configuración estándar
-        $appName = $this->config->getAppValue('pwa_suite', 'app_name', 'Bcloud WorkSuite');
-        $themeColor = $this->config->getAppValue('pwa_suite', 'theme_color', '#181818');
+        // 2. Modo estándar: toma 100% de los valores guardados en el panel
+        $appName = $this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA');
+        $themeColor = $this->config->getAppValue('pwa_suite', 'theme_color', '#0082c9');
         $bgColor = $this->config->getAppValue('pwa_suite', 'bg_color', '#181818');
         $displayMode = $this->config->getAppValue('pwa_suite', 'display_mode', 'standalone');
 
         $manifest = [
-            'id' => 'bcloud-worksuite-pwa',
+            'id' => 'nextcloud-custom-pwa',
             'name' => $appName,
             'short_name' => $appName,
-            'description' => 'Entorno corporativo unificado Nextcloud',
+            'description' => $appName . ' - Entorno Nextcloud',
             'start_url' => '/',
             'scope' => '/',
             'display' => $displayMode,
@@ -52,8 +56,6 @@ class PwaController extends Controller {
             'orientation' => 'any',
             'background_color' => $bgColor,
             'theme_color' => $themeColor,
-            'categories' => ['productivity', 'business'],
-            'prefer_related_applications' => false,
             'icons' => [
                 [
                     'src' => '/apps/theming/icon?v=0',
@@ -76,13 +78,8 @@ class PwaController extends Controller {
             ],
             'shortcuts' => [
                 [
-                    'name' => 'Mis Archivos',
+                    'name' => 'Archivos',
                     'url' => '/apps/files/',
-                    'icons' => [['src' => '/apps/theming/icon?v=0', 'sizes' => '512x512']]
-                ],
-                [
-                    'name' => 'Calendario',
-                    'url' => '/apps/calendar/',
                     'icons' => [['src' => '/apps/theming/icon?v=0', 'sizes' => '512x512']]
                 ]
             ]
@@ -93,13 +90,17 @@ class PwaController extends Controller {
         return $response;
     }
 
+    /**
+     * @NoCSRFRequired
+     * @PublicPage
+     */
     #[PublicPage]
     #[NoCSRFRequired]
     public function getServiceWorker(): DataResponse {
         $advancedMode = $this->config->getAppValue('pwa_suite', 'advanced_mode', 'no');
         $customSw = $this->config->getAppValue('pwa_suite', 'custom_sw', '');
 
-        // Si el modo experto está activo y tiene código JavaScript
+        // 1. Si el usuario pegó su propio código de Service Worker en el panel
         if ($advancedMode === 'yes' && !empty(trim($customSw))) {
             $response = new DataResponse($customSw);
             $response->addHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -107,7 +108,11 @@ class PwaController extends Controller {
             return $response;
         }
 
-        // Service Worker robusto por defecto (offline fallback + claim inmediato)
+        // 2. Service Worker estándar dinámico
+        $appName = addslashes($this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA'));
+        $themeColor = addslashes($this->config->getAppValue('pwa_suite', 'theme_color', '#0082c9'));
+        $bgColor = addslashes($this->config->getAppValue('pwa_suite', 'bg_color', '#181818'));
+
         $swCode = <<<JS
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
@@ -120,17 +125,17 @@ self.addEventListener('fetch', (e) => {
                 <html lang="es">
                 <head>
                     <meta charset="UTF-8">
-                    <title>Bcloud Offline</title>
+                    <title>{$appName} Offline</title>
                     <style>
-                        body { background:#181818; color:#fff; font-family:system-ui; display:flex; height:100vh; align-items:center; justify-content:center; margin:0; text-align:center; }
+                        body { background:{$bgColor}; color:#fff; font-family:system-ui; display:flex; height:100vh; align-items:center; justify-content:center; margin:0; text-align:center; }
                         .c { background:#222; padding:2rem; border-radius:12px; max-width:380px; }
-                        h1 { color:#0082c9; margin-top:0; }
-                        button { background:#0082c9; color:#fff; border:0; padding:.75rem 1.5rem; border-radius:6px; font-weight:700; cursor:pointer; width:100%; margin-top:1rem; }
+                        h1 { color:{$themeColor}; margin-top:0; }
+                        button { background:{$themeColor}; color:#fff; border:0; padding:.75rem 1.5rem; border-radius:6px; font-weight:700; cursor:pointer; width:100%; margin-top:1rem; }
                     </style>
                 </head>
                 <body>
                     <div class="c">
-                        <h1>Bcloud WorkSuite</h1>
+                        <h1>{$appName}</h1>
                         <p>Sin conexión con el servidor.</p>
                         <button onclick="location.reload()">Reintentar</button>
                     </div>
