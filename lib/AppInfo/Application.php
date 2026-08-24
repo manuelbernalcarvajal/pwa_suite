@@ -16,11 +16,13 @@ class Application extends App {
         $dispatcher = $this->getContainer()->get(IEventDispatcher::class);
         
         $dispatcher->addListener(BeforeTemplateRenderedEvent::class, function () {
+            // Inyecta el manifest oficial de PWA Suite en el <head>
             Util::addHeader('link', [
                 'rel' => 'manifest',
                 'href' => Util::linkToRoute('pwa_suite.pwa.getManifest')
             ]);
             
+            // Inyecta el script de registro y control del Service Worker
             Util::addScript('pwa_suite', 'pwa-register');
         });
     }
