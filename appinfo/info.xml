@@ -2,17 +2,20 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>pwa_suite</id>
     <name>PWA Suite &amp; Customizer</name>
-    <namespace>PwaSuite</namespace>
     <summary>Personalizador y gestor de PWA para Nextcloud</summary>
-    <description>Permite configurar Web App Manifest y Service Worker personalizados.</description>
-    <version>1.0.1</version>
+    <description><![CDATA[Permite configurar Web App Manifest y Service Worker personalizados.]]></description>
+    <version>1.0.2</version>
     <licence>agpl</licence>
     <author>Manuel Bernal Carvajal</author>
+    <namespace>PwaSuite</namespace>
     <category>customization</category>
+    <website>https://github.com/manuelbernalcarvajal/pwa_suite</website>
+    <bugs>https://github.com/manuelbernalcarvajal/pwa_suite/issues</bugs>
+    <repository type="git">https://github.com/manuelbernalcarvajal/pwa_suite.git</repository>
     
     <dependencies>
         <php min-version="8.0" />
-        <nextcloud min-version="27" max-version="35" />
+        <nextcloud min-version="27" max-version="31" />
     </dependencies>
 
     <settings>
