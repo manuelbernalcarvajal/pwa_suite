@@ -39,18 +39,16 @@ class PwaController extends Controller {
                 $file = $folder->getFile('app-icon.png');
                 $content = $file->getContent();
 
-                // Entrega directa del binario PNG sin pasar por el serializador JSON de Nextcloud
                 header('Content-Type: image/png');
                 header('Content-Length: ' . strlen($content));
                 header('Cache-Control: public, max-age=604800');
                 echo $content;
                 exit;
             } catch (\Exception $e) {
-                // Fallback automático si no encuentra el archivo
+                // Fallback automático si no se encuentra el archivo
             }
         }
 
-        // Redirección al icono predeterminado del tema si no hay custom
         header('Location: /apps/theming/icon?v=0');
         exit;
     }
@@ -65,6 +63,7 @@ class PwaController extends Controller {
         $advancedMode = $this->config->getAppValue('pwa_suite', 'advanced_mode', 'no');
         $customManifest = $this->config->getAppValue('pwa_suite', 'custom_manifest', '');
 
+        // Si el usuario activa el modo experto, puede definir Window Controls Overlay u otros parámetros manualmente
         if ($advancedMode === 'yes' && !empty(trim($customManifest))) {
             $decoded = json_decode($customManifest, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -82,6 +81,7 @@ class PwaController extends Controller {
 
         $iconUrl = $this->urlGenerator->linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
 
+        // Estructura limpia con barra superior de ventana nativa estándar
         $manifest = [
             'id' => 'nextcloud-custom-pwa',
             'name' => $appName,
@@ -90,7 +90,6 @@ class PwaController extends Controller {
             'start_url' => '/',
             'scope' => '/',
             'display' => $displayMode,
-            'display_override' => ['window-controls-overlay', 'minimal-ui', 'standalone'],
             'orientation' => 'any',
             'background_color' => $bgColor,
             'theme_color' => $themeColor,
