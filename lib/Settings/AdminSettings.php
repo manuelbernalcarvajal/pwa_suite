@@ -5,21 +5,24 @@ namespace OCA\PwaSuite\Settings;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Settings\ISettings;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 use OCP\Util;
 
 class AdminSettings implements ISettings {
 
     private IConfig $config;
+    private IURLGenerator $urlGenerator;
 
-    public function __construct(IConfig $config) {
+    public function __construct(IConfig $config, IURLGenerator $urlGenerator) {
         $this->config = $config;
+        $this->urlGenerator = $urlGenerator;
     }
 
     public function getForm(): TemplateResponse {
         Util::addScript('pwa_suite', 'admin-script');
 
         $iconVersion = $this->config->getAppValue('pwa_suite', 'icon_version', '1');
-        $iconUrl = Util::linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
+        $iconUrl = $this->urlGenerator->linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
 
         $parameters = [
             'appName' => $this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA'),
