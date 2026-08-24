@@ -9,6 +9,14 @@ Transforma cualquier instancia de Nextcloud 34 en una Progressive Web App (PWA) 
 * **Service Worker Automatizado:** Registro transparente sin tocar archivos del core.
 * **Integración Nativa:** Panel de ajustes integrado en la sección de Seguridad de Nextcloud.
 
+## 🛠️ Mantenimiento y Contribuciones
+
+Este es un proyecto personal mantenido de forma voluntaria. 
+
+- **Ciclo de actualizaciones:** Suelo actualizar la app periódicamente coincidiendo con la actualización de mi propia instancia de Nextcloud.
+- **Soporte de versiones:** Si sale una nueva versión de Nextcloud (ej. Nextcloud 35, 36...) y necesitas compatibilidad antes de que yo actualice mi servidor, **los Pull Requests son totalmente bienvenidos**. Si testeas la app y confirmas compatibilidad, estaré encantado de fusionar el cambio y publicar una nueva versión.
+- Si verificas que las versiones anteriores a la 34 son compatibles indícalo y le bajo el min a esa versión.
+
 ## Licencia
 AGPL-3.0
 
@@ -20,9 +28,9 @@ pwa_suite/
 │   ├── info.xml
 │   └── routes.php
 ├── css/
-│   └── admin-style.css       <-- [NUEVO] Estilos de la UI de administración
+│   └── admin-style.css      
 ├── js/
-│   ├── admin-script.js       <-- [NUEVO] Peticiones AJAX del panel
+│   ├── admin-script.js      
 │   └── pwa-register.js
 ├── lib/
 │   ├── AppInfo/
