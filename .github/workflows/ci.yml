@@ -93,7 +93,7 @@ jobs:
 
       - name: Report Success to PR
         if: success() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             try {
@@ -109,7 +109,7 @@ jobs:
 
       - name: Report Failure with Logs to PR
         if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             try {
