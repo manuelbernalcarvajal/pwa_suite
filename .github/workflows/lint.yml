@@ -1,0 +1,20 @@
+name: Code Style & Linting
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  php-cs:
+    name: PSR-12 Coding Standards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: phpcs
+      - name: Check PSR-12 compliance
+        run: phpcs --standard=PSR12 lib/ appinfo/ templates/
