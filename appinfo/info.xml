@@ -5,7 +5,7 @@
     <namespace>PwaSuite</namespace>
     <summary>Personalizador y gestor de PWA para Nextcloud</summary>
     <description>Permite configurar Web App Manifest y Service Worker personalizados.</description>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <licence>agpl</licence>
     <author>Manuel Bernal Carvajal</author>
     <category>customization</category>
