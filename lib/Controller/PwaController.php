@@ -4,7 +4,6 @@ namespace OCA\PwaSuite\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
-use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -31,23 +30,29 @@ class PwaController extends Controller {
      */
     #[PublicPage]
     #[NoCSRFRequired]
-    public function getIcon(): mixed {
+    public function getIcon(): void {
         $hasCustom = $this->config->getAppValue('pwa_suite', 'has_custom_icon', 'no');
 
         if ($hasCustom === 'yes') {
             try {
                 $folder = $this->appData->getFolder('icons');
                 $file = $folder->getFile('app-icon.png');
-                $response = new DataResponse($file->getContent());
-                $response->addHeader('Content-Type', 'image/png');
-                $response->addHeader('Cache-Control', 'public, max-age=604800');
-                return $response;
+                $content = $file->getContent();
+
+                // Entrega directa del binario PNG sin pasar por el serializador JSON de Nextcloud
+                header('Content-Type: image/png');
+                header('Content-Length: ' . strlen($content));
+                header('Cache-Control: public, max-age=604800');
+                echo $content;
+                exit;
             } catch (\Exception $e) {
-                // Fallback si no se encuentra el archivo
+                // Fallback automático si no encuentra el archivo
             }
         }
 
-        return new RedirectResponse('/apps/theming/icon?v=0');
+        // Redirección al icono predeterminado del tema si no hay custom
+        header('Location: /apps/theming/icon?v=0');
+        exit;
     }
 
     /**
