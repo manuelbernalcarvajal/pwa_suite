@@ -3,8 +3,7 @@
 namespace OCA\PwaSuite\AppInfo;
 
 use OCP\AppFramework\App;
-use OCP\IConfig;
-use OCP\Util;
+use OCP\IURLGenerator;
 use OCA\PwaSuite\Controller\PwaController;
 
 class Application extends App {
@@ -14,7 +13,7 @@ class Application extends App {
 
         $uri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // 1. SECUESTRO DE CUALQUIER SERVICE WORKER (Notifications, Talk, Core, etc.)
+        // 1. SECUESTRO DE SERVICE WORKER
         if (preg_match('/service-worker\.js/i', $uri) || str_ends_with($uri, '/sw.js')) {
             /** @var PwaController $controller */
             $controller = $this->getContainer()->get(PwaController::class);
@@ -25,10 +24,10 @@ class Application extends App {
             header('Cache-Control: no-cache, no-store, must-revalidate');
             
             echo $response->getData();
-            exit; // Corta la ejecución: Nextcloud nunca llega a cargar el worker por defecto
+            exit;
         }
 
-        // 2. SECUESTRO DE CUALQUIER MANIFEST (Theming, Files, Dashboard, etc.)
+        // 2. SECUESTRO DE MANIFEST
         if (
             str_contains($uri, 'theming/manifest') ||
             str_contains($uri, '/manifest.json') ||
@@ -42,19 +41,21 @@ class Application extends App {
             header('Cache-Control: no-cache, no-store, must-revalidate');
 
             echo json_encode($response->getData(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            exit; // Corta la ejecución: devuelve nuestro JSON para cualquier app
+            exit;
         }
 
-        // 3. Inyección limpia en el HTML para navegaciones estándar
+        // 3. Inyección en cabeceras HTML
         if (!str_starts_with($uri, '/remote.php') && !str_starts_with($uri, '/ocs/')) {
-            ob_start(function (?string $buffer) {
+            $container = $this->getContainer();
+            ob_start(function (?string $buffer) use ($container) {
                 if ($buffer === null || $buffer === '' || !str_contains($buffer, '<html')) {
                     return $buffer;
                 }
 
-                $manifestUrl = Util::linkToRoute('pwa_suite.pwa.getManifest');
+                /** @var IURLGenerator $urlGenerator */
+                $urlGenerator = $container->get(IURLGenerator::class);
+                $manifestUrl = $urlGenerator->linkToRoute('pwa_suite.pwa.getManifest');
 
-                // Reemplaza cualquier manifest previo por el nuestro
                 $cleaned = preg_replace('/<link\s+[^>]*rel=["\']manifest["\'][^>]*>/i', '', $buffer);
                 return preg_replace(
                     '/(<head[^>]*>)/i',
