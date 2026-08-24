@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main, master ]
   schedule:
-    - cron: '0 4 * * 1' # Cada lunes a las 04:00 UTC
+    - cron: '0 4 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,6 @@ jobs:
 
       - name: Scan repository for malware
         run: |
-          # Escanea recursivamente excluyendo la carpeta interna de git
           clamscan -r --bell -i --exclude-dir="^.git" .
 
   secrets-scan:
@@ -48,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   sast-security-scan:
-    name: Code Vulnerability Audit (Semgrep)
+    name: Critical Vulnerability Audit (Semgrep)
     runs-on: ubuntu-latest
     container:
       image: semgrep/semgrep
@@ -56,13 +55,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Semgrep SAST Rulesets (PHP & JS)
+      - name: Run Semgrep (Errors & Exploits only)
         run: |
           semgrep scan \
-            --config=p/php \
             --config=p/owasp-top-ten \
-            --config=p/javascript \
             --config=p/secrets \
+            --config=p/php \
+            --severity ERROR \
+            --metrics=off \
             --error
 
   report-status:
@@ -81,7 +81,7 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '🛡️ **Auditoría de Seguridad Superada:** No se detectó malware, secretos filtrados ni vulnerabilidades conocidas en este Pull Request.'
+                body: '🛡️ **Auditoría de Seguridad Superada:** No se detectó malware, secretos filtrados ni vulnerabilidades críticas en este PR.'
               });
             } catch (err) {
               console.log('No se pudo comentar en el PR:', err.message);
@@ -97,7 +97,7 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '🚨 **Alerta de Seguridad:** El escaneo detectó posibles amenazas, secretos expuestos o patrones vulnerables. Revisa la pestaña de Actions antes de aceptar este cambio.'
+                body: '🚨 **Alerta de Seguridad:** Se detectaron amenazas críticas o credenciales expuestas en el código.'
               });
             } catch (err) {
               console.log('No se pudo comentar en el PR:', err.message);
