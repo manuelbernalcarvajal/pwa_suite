@@ -4,6 +4,7 @@ namespace OCA\PwaSuite\AppInfo;
 
 use OCP\AppFramework\App;
 use OCP\IURLGenerator;
+use OCP\Util;
 use OCA\PwaSuite\Controller\PwaController;
 
 class Application extends App {
@@ -13,7 +14,7 @@ class Application extends App {
 
         $uri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // 1. SECUESTRO DE CUALQUIER SERVICE WORKER
+        // 1. Intercepción del Service Worker
         if (preg_match('/service-worker\.js/i', $uri) || str_ends_with($uri, '/sw.js')) {
             /** @var PwaController $controller */
             $controller = $this->getContainer()->get(PwaController::class);
@@ -27,7 +28,7 @@ class Application extends App {
             exit;
         }
 
-        // 2. SECUESTRO DE CUALQUIER MANIFEST
+        // 2. Intercepción de Manifest
         if (
             str_contains($uri, 'theming/manifest') ||
             str_contains($uri, '/manifest.json') ||
@@ -44,9 +45,13 @@ class Application extends App {
             exit;
         }
 
-        // 3. INYECCIÓN INLINE EN EL HTML: MANIFEST + REGISTRO OBLIGATORIO DE SERVICE WORKER
+        // 3. Inyección en cabeceras HTML y carga del Service Worker
         if (!str_starts_with($uri, '/remote.php') && !str_starts_with($uri, '/ocs/')) {
             $container = $this->getContainer();
+            
+            // Carga el script que registra el Service Worker
+            Util::addScript('pwa_suite', 'pwa-register');
+
             ob_start(function (?string $buffer) use ($container) {
                 if ($buffer === null || $buffer === '' || !str_contains($buffer, '<html')) {
                     return $buffer;
@@ -55,20 +60,14 @@ class Application extends App {
                 /** @var IURLGenerator $urlGenerator */
                 $urlGenerator = $container->get(IURLGenerator::class);
                 $manifestUrl = $urlGenerator->linkToRoute('pwa_suite.pwa.getManifest');
-                $swUrl = $urlGenerator->linkToRoute('pwa_suite.pwa.getServiceWorker');
 
                 $cleaned = preg_replace('/<link\s+[^>]*rel=["\']manifest["\'][^>]*>/i', '', $buffer);
-
-                $injection = "\n" . '    <link rel="manifest" href="' . $manifestUrl . '">' . "\n" .
-                    '    <script>' .
-                    'if("serviceWorker" in navigator){' .
-                    'window.addEventListener("load",function(){' .
-                    'navigator.serviceWorker.register("' . $swUrl . '",{scope:"/"}).catch(function(e){console.error("[PWA Suite]",e);});' .
-                    '});' .
-                    '}' .
-                    '</script>';
-
-                return preg_replace('/(<head[^>]*>)/i', '$1' . $injection, $cleaned, 1);
+                return preg_replace(
+                    '/(<head[^>]*>)/i',
+                    '$1' . "\n" . '    <link rel="manifest" href="' . $manifestUrl . '">',
+                    $cleaned,
+                    1
+                );
             });
         }
     }
