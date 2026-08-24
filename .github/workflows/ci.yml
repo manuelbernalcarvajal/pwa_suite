@@ -1,0 +1,139 @@
+name: PWA Suite CI & Compatibility
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  php-lint:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Lint PHP files
+        run: find lib/ appinfo/ templates/ -name "*.php" -exec php -l {} \;
+
+  smoke-test:
+    name: Nextcloud ${{ matrix.nc-version }}
+    needs: php-lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nc-version: ['34-apache', 'latest']
+
+    steps:
+      - name: Checkout app code
+        uses: actions/checkout@v4
+        with:
+          path: pwa_suite
+
+      - name: Patch max-version to 99
+        run: |
+          sed -i -E 's/max-version="[0-9]+"/max-version="99"/' pwa_suite/appinfo/info.xml
+
+      - name: Start Nextcloud Container
+        run: |
+          docker run -d --name nc-test -p 8080:80 \
+            -v ${{ github.workspace }}/pwa_suite:/var/www/html/custom_apps/pwa_suite \
+            nextcloud:${{ matrix.nc-version }}
+          
+          # Espera con límite de 30 intentos (60 segundos máximo)
+          echo "Esperando inicialización de Nextcloud..."
+          for i in {1..30}; do
+            if docker exec nc-test test -f /var/www/html/occ; then
+              echo "Nextcloud inicializado correctamente en $i intentos."
+              break
+            fi
+            sleep 2
+            if [ "$i" -eq 30 ]; then
+              echo "Error: Tiempo de espera agotado para el inicio de Nextcloud."
+              exit 1
+            fi
+          done
+
+      - name: Install Nextcloud & Enable App
+        run: |
+          # Dar permisos de lectura/ejecución al directorio montado
+          docker exec nc-test chown -R www-data:www-data /var/www/html/custom_apps/pwa_suite
+          
+          # Instalación con base de datos SQLite efímera
+          docker exec -u www-data nc-test php occ maintenance:install \
+            --database=sqlite --admin-user=admin --admin-pass=admin123
+          
+          # Habilitar pwa_suite
+          docker exec -u www-data nc-test php occ app:enable pwa_suite
+
+      - name: Verify App Status & Endpoints
+        run: |
+          docker exec -u www-data nc-test php occ app:list | grep -q "pwa_suite"
+          curl -f -s -I http://localhost:8080/index.php/login | grep "200 OK"
+
+      - name: Extract Logs on Failure
+        if: failure()
+        run: |
+          echo "=== DOCKER LOGS ===" > /tmp/nc_error.log
+          docker logs nc-test --tail 50 >> /tmp/nc_error.log 2>&1 || true
+          
+          echo -e "\n=== NEXTCLOUD INTERNAL LOG ===" >> /tmp/nc_error.log
+          docker exec nc-test tail -n 50 /var/www/html/data/nextcloud.log >> /tmp/nc_error.log 2>&1 || true
+
+      - name: Report Success to PR
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '✅ **Test superado:** `pwa_suite` se instaló y habilitó correctamente en **Nextcloud ${{ matrix.nc-version }}**.'
+              });
+            } catch (err) {
+              console.log('No se pudo comentar en el PR (posiblemente un fork externo):', err.message);
+            }
+
+      - name: Report Failure with Logs to PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const fs = require('fs');
+              let logContent = 'No se pudieron extraer logs adicionales del contenedor.';
+              
+              if (fs.existsSync('/tmp/nc_error.log')) {
+                logContent = fs.readFileSync('/tmp/nc_error.log', 'utf8');
+              }
+
+              const body = `❌ **Test fallido en Nextcloud ${{ matrix.nc-version }}**\n\n` +
+                `<details>\n<summary>🔍 <b>Haz clic aquí para ver los logs del error</b></summary>\n\n` +
+                `\`\`\`text\n${logContent}\n\`\`\`\n` +
+                `</details>`;
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } catch (err) {
+              console.log('No se pudo comentar en el PR (posiblemente un fork externo):', err.message);
+            }
