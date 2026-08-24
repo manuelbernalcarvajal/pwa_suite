@@ -13,7 +13,7 @@ class Application extends App {
 
         $uri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // 1. SECUESTRO DE SERVICE WORKER
+        // 1. SECUESTRO DE CUALQUIER SERVICE WORKER
         if (preg_match('/service-worker\.js/i', $uri) || str_ends_with($uri, '/sw.js')) {
             /** @var PwaController $controller */
             $controller = $this->getContainer()->get(PwaController::class);
@@ -27,7 +27,7 @@ class Application extends App {
             exit;
         }
 
-        // 2. SECUESTRO DE MANIFEST
+        // 2. SECUESTRO DE CUALQUIER MANIFEST
         if (
             str_contains($uri, 'theming/manifest') ||
             str_contains($uri, '/manifest.json') ||
@@ -44,7 +44,7 @@ class Application extends App {
             exit;
         }
 
-        // 3. Inyección en cabeceras HTML
+        // 3. INYECCIÓN INLINE EN EL HTML: MANIFEST + REGISTRO OBLIGATORIO DE SERVICE WORKER
         if (!str_starts_with($uri, '/remote.php') && !str_starts_with($uri, '/ocs/')) {
             $container = $this->getContainer();
             ob_start(function (?string $buffer) use ($container) {
@@ -55,14 +55,20 @@ class Application extends App {
                 /** @var IURLGenerator $urlGenerator */
                 $urlGenerator = $container->get(IURLGenerator::class);
                 $manifestUrl = $urlGenerator->linkToRoute('pwa_suite.pwa.getManifest');
+                $swUrl = $urlGenerator->linkToRoute('pwa_suite.pwa.getServiceWorker');
 
                 $cleaned = preg_replace('/<link\s+[^>]*rel=["\']manifest["\'][^>]*>/i', '', $buffer);
-                return preg_replace(
-                    '/(<head[^>]*>)/i',
-                    '$1' . "\n" . '    <link rel="manifest" href="' . $manifestUrl . '">',
-                    $cleaned,
-                    1
-                );
+
+                $injection = "\n" . '    <link rel="manifest" href="' . $manifestUrl . '">' . "\n" .
+                    '    <script>' .
+                    'if("serviceWorker" in navigator){' .
+                    'window.addEventListener("load",function(){' .
+                    'navigator.serviceWorker.register("' . $swUrl . '",{scope:"/"}).catch(function(e){console.error("[PWA Suite]",e);});' .
+                    '});' .
+                    '}' .
+                    '</script>';
+
+                return preg_replace('/(<head[^>]*>)/i', '$1' . $injection, $cleaned, 1);
             });
         }
     }
