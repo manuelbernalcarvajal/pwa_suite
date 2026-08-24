@@ -3,7 +3,9 @@
 namespace OCA\PwaSuite\AppInfo;
 
 use OCP\AppFramework\App;
+use OCP\IConfig;
 use OCP\Util;
+use OCA\PwaSuite\Controller\PwaController;
 
 class Application extends App {
 
@@ -11,52 +13,56 @@ class Application extends App {
         parent::__construct('pwa_suite', $urlParams);
 
         $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if (str_starts_with($uri, '/remote.php') || str_starts_with($uri, '/ocs/')) {
-            return;
+
+        // 1. SECUESTRO DE CUALQUIER SERVICE WORKER (Notifications, Talk, Core, etc.)
+        if (preg_match('/service-worker\.js/i', $uri) || str_ends_with($uri, '/sw.js')) {
+            /** @var PwaController $controller */
+            $controller = $this->getContainer()->get(PwaController::class);
+            $response = $controller->getServiceWorker();
+
+            header('Content-Type: application/javascript; charset=utf-8');
+            header('Service-Worker-Allowed: /');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            
+            echo $response->getData();
+            exit; // Corta la ejecución: Nextcloud nunca llega a cargar el worker por defecto
         }
 
-        // Intercepta el flujo HTML antes de enviarlo al navegador
-        ob_start(function (?string $buffer) {
-            if ($buffer === null || $buffer === '' || !str_contains($buffer, '<html')) {
-                return $buffer;
-            }
+        // 2. SECUESTRO DE CUALQUIER MANIFEST (Theming, Files, Dashboard, etc.)
+        if (
+            str_contains($uri, 'theming/manifest') ||
+            str_contains($uri, '/manifest.json') ||
+            preg_match('/\/manifest(\/|\?|$)/i', $uri)
+        ) {
+            /** @var PwaController $controller */
+            $controller = $this->getContainer()->get(PwaController::class);
+            $response = $controller->getManifest();
 
-            $manifestUrl = Util::linkToRoute('pwa_suite.pwa.getManifest');
-            $swUrl = Util::linkToRoute('pwa_suite.pwa.getServiceWorker');
+            header('Content-Type: application/manifest+json; charset=utf-8');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
 
-            // 1. Eliminar cualquier manifest previo de Theming o Dashboard
-            $cleaned = preg_replace('/<link\s+[^>]*rel=["\']manifest["\'][^>]*>/i', '', $buffer);
+            echo json_encode($response->getData(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            exit; // Corta la ejecución: devuelve nuestro JSON para cualquier app
+        }
 
-            // 2. Inyección prioritaria inline en el <head>
-            $headInject = <<<HTML
-    <link rel="manifest" href="{$manifestUrl}">
-    <script>
-    (function() {
-        if ('serviceWorker' in navigator) {
-            const targetSW = '{$swUrl}';
-            const nativeRegister = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+        // 3. Inyección limpia en el HTML para navegaciones estándar
+        if (!str_starts_with($uri, '/remote.php') && !str_starts_with($uri, '/ocs/')) {
+            ob_start(function (?string $buffer) {
+                if ($buffer === null || $buffer === '' || !str_contains($buffer, '<html')) {
+                    return $buffer;
+                }
 
-            // Redirigir cualquier intento de registro (ej. Notifications) hacia nuestro SW unificado
-            navigator.serviceWorker.register = function(url, options) {
-                return nativeRegister(targetSW, { scope: '/' });
-            };
+                $manifestUrl = Util::linkToRoute('pwa_suite.pwa.getManifest');
 
-            window.addEventListener('load', function() {
-                nativeRegister(targetSW, { scope: '/' }).catch(function(err) {
-                    console.error('[PWA Suite] Error registrando SW:', err);
-                });
+                // Reemplaza cualquier manifest previo por el nuestro
+                $cleaned = preg_replace('/<link\s+[^>]*rel=["\']manifest["\'][^>]*>/i', '', $buffer);
+                return preg_replace(
+                    '/(<head[^>]*>)/i',
+                    '$1' . "\n" . '    <link rel="manifest" href="' . $manifestUrl . '">',
+                    $cleaned,
+                    1
+                );
             });
         }
-    })();
-    </script>
-HTML;
-
-            return preg_replace(
-                '/(<head[^>]*>)/i',
-                '$1' . "\n" . $headInject,
-                $cleaned,
-                1
-            );
-        });
     }
 }
