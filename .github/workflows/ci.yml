@@ -54,30 +54,27 @@ jobs:
             -v ${{ github.workspace }}/pwa_suite:/var/www/html/custom_apps/pwa_suite \
             nextcloud:${{ matrix.nc-version }}
           
-          # Espera con límite de 30 intentos (60 segundos máximo)
-          echo "Esperando inicialización de Nextcloud..."
+          echo "Esperando inicialización completa del servidor web..."
           for i in {1..30}; do
-            if docker exec nc-test test -f /var/www/html/occ; then
-              echo "Nextcloud inicializado correctamente en $i intentos."
+            if curl -s -f http://localhost:8080/status.php > /dev/null 2>&1; then
+              echo "Nextcloud listo en $i intentos."
               break
             fi
             sleep 2
             if [ "$i" -eq 30 ]; then
               echo "Error: Tiempo de espera agotado para el inicio de Nextcloud."
+              docker logs nc-test
               exit 1
             fi
           done
 
       - name: Install Nextcloud & Enable App
         run: |
-          # Dar permisos de lectura/ejecución al directorio montado
           docker exec nc-test chown -R www-data:www-data /var/www/html/custom_apps/pwa_suite
           
-          # Instalación con base de datos SQLite efímera
           docker exec -u www-data nc-test php occ maintenance:install \
             --database=sqlite --admin-user=admin --admin-pass=admin123
           
-          # Habilitar pwa_suite
           docker exec -u www-data nc-test php occ app:enable pwa_suite
 
       - name: Verify App Status & Endpoints
@@ -107,7 +104,7 @@ jobs:
                 body: '✅ **Test superado:** `pwa_suite` se instaló y habilitó correctamente en **Nextcloud ${{ matrix.nc-version }}**.'
               });
             } catch (err) {
-              console.log('No se pudo comentar en el PR (posiblemente un fork externo):', err.message);
+              console.log('No se pudo comentar en el PR (posiblemente un fork externo o bot):', err.message);
             }
 
       - name: Report Failure with Logs to PR
@@ -135,5 +132,5 @@ jobs:
                 body: body
               });
             } catch (err) {
-              console.log('No se pudo comentar en el PR (posiblemente un fork externo):', err.message);
+              console.log('No se pudo comentar en el PR (posiblemente un fork externo o bot):', err.message);
             }
