@@ -13,9 +13,9 @@ Transforma cualquier instancia de Nextcloud 34 en una Progressive Web App (PWA) 
 
 Este es un proyecto personal mantenido de forma voluntaria. 
 
-- **Ciclo de actualizaciones:** Suelo actualizar la app periódicamente coincidiendo con la actualización de mi propia instancia de Nextcloud.
+- **Ciclo de actualizaciones:** Suelo actualizar la app periódicamente coincidiendo con la actualización de mi propia instancia de Nextcloud (normalmente por estabilidad cuando se agota la vida de esa version).
 - **Soporte de versiones:** Si sale una nueva versión de Nextcloud (ej. Nextcloud 35, 36...) y necesitas compatibilidad antes de que yo actualice mi servidor, **los Pull Requests son totalmente bienvenidos**. Si testeas la app y confirmas compatibilidad, estaré encantado de fusionar el cambio y publicar una nueva versión.
-- Si verificas que las versiones anteriores a la 34 son compatibles indícalo y le bajo el min a esa versión.
+- Si verificas que las versiones anteriores a la 34 son compatibles indícalo y le bajo el min a esa versión (nace con la 34 dado que es la que uso actualmente y con la que he testado).
 
 ## Licencia
 AGPL-3.0
