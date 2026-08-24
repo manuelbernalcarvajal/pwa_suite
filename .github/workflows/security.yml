@@ -1,0 +1,104 @@
+name: Security & Malware Audit
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 4 * * 1' # Cada lunes a las 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  antivirus-scan:
+    name: Antivirus & Webshell Scan (ClamAV)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install & Update ClamAV
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clamav clamav-daemon
+          sudo systemctl stop clamav-freshclam || true
+          sudo freshclam
+
+      - name: Scan repository for malware
+        run: |
+          # Escanea recursivamente excluyendo la carpeta interna de git
+          clamscan -r --bell -i --exclude-dir="^.git" .
+
+  secrets-scan:
+    name: Secrets & Token Leak Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast-security-scan:
+    name: Code Vulnerability Audit (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST Rulesets (PHP & JS)
+        run: |
+          semgrep scan \
+            --config=p/php \
+            --config=p/owasp-top-ten \
+            --config=p/javascript \
+            --config=p/secrets \
+            --error
+
+  report-status:
+    name: Report Security Status to PR
+    needs: [antivirus-scan, secrets-scan, sast-security-scan]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment Security Approval
+        if: needs.antivirus-scan.result == 'success' && needs.secrets-scan.result == 'success' && needs.sast-security-scan.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '🛡️ **Auditoría de Seguridad Superada:** No se detectó malware, secretos filtrados ni vulnerabilidades conocidas en este Pull Request.'
+              });
+            } catch (err) {
+              console.log('No se pudo comentar en el PR:', err.message);
+            }
+
+      - name: Comment Security Alert
+        if: needs.antivirus-scan.result == 'failure' || needs.secrets-scan.result == 'failure' || needs.sast-security-scan.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '🚨 **Alerta de Seguridad:** El escaneo detectó posibles amenazas, secretos expuestos o patrones vulnerables. Revisa la pestaña de Actions antes de aceptar este cambio.'
+              });
+            } catch (err) {
+              console.log('No se pudo comentar en el PR:', err.message);
+            }
