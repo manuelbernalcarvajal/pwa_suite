@@ -49,7 +49,8 @@ class PwaController extends Controller {
             }
         }
 
-        header('Location: /apps/theming/icon?v=0');
+        $fallbackIcon = $this->urlGenerator->linkToRouteAbsolute('theming.Icon.getThemeIcon') . '?v=0';
+        header('Location: ' . $fallbackIcon);
         exit;
     }
 
@@ -63,7 +64,6 @@ class PwaController extends Controller {
         $advancedMode = $this->config->getAppValue('pwa_suite', 'advanced_mode', 'no');
         $customManifest = $this->config->getAppValue('pwa_suite', 'custom_manifest', '');
 
-        // Si el usuario activa el modo experto, puede definir Window Controls Overlay u otros parámetros manualmente
         if ($advancedMode === 'yes' && !empty(trim($customManifest))) {
             $decoded = json_decode($customManifest, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -81,7 +81,6 @@ class PwaController extends Controller {
 
         $iconUrl = $this->urlGenerator->linkToRoute('pwa_suite.pwa.getIcon') . '?v=' . $iconVersion;
 
-        // Estructura limpia con barra superior de ventana nativa estándar
         $manifest = [
             'id' => 'nextcloud-custom-pwa',
             'name' => $appName,
@@ -182,12 +181,17 @@ self.addEventListener('push', (e) => {
         badge: '/apps/pwa_suite/icon',
         data: { url: '/' }
     };
+
     if (e.data) {
         try {
             const json = e.data.json();
-            title = json.title || title;
-            options.body = json.body || '';
-            if (json.url) options.data.url = json.url;
+            title = json.title || json.subject || title;
+            options.body = json.body || json.message || '';
+            
+            const target = json.url || json.link || json.targetUrl;
+            if (target) options.data.url = target;
+            if (json.icon) options.icon = json.icon;
+            if (json.tag) options.tag = json.tag;
         } catch (err) {
             const text = e.data.text();
             const lines = text.split('\\n');
@@ -205,10 +209,14 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
     e.notification.close();
     const targetUrl = e.notification.data?.url || '/';
+
     e.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let client of windowClients) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    if ('navigate' in client && targetUrl !== '/') {
+                        client.navigate(targetUrl);
+                    }
                     return client.focus();
                 }
             }
