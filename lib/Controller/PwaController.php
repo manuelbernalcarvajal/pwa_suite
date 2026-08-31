@@ -137,9 +137,17 @@ class PwaController extends Controller {
             return $response;
         }
 
-        $appName = addslashes($this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA'));
-        $themeColor = addslashes($this->config->getAppValue('pwa_suite', 'theme_color', '#181818'));
-        $bgColor = addslashes($this->config->getAppValue('pwa_suite', 'bg_color', '#181818'));
+        $rawAppName = $this->config->getAppValue('pwa_suite', 'app_name', 'Nextcloud PWA');
+        $rawThemeColor = $this->config->getAppValue('pwa_suite', 'theme_color', '#181818');
+        $rawBgColor = $this->config->getAppValue('pwa_suite', 'bg_color', '#181818');
+
+        // Escapado para literales JavaScript
+        $appNameJs = addslashes($rawAppName);
+
+        // Sanitización para inyección segura en HTML y CSS de la página offline
+        $appNameHtml = htmlspecialchars($rawAppName, ENT_QUOTES, 'UTF-8');
+        $themeColor = preg_match('/^#[a-fA-F0-9]{3,8}$/', $rawThemeColor) ? $rawThemeColor : '#181818';
+        $bgColor = preg_match('/^#[a-fA-F0-9]{3,8}$/', $rawBgColor) ? $rawBgColor : '#181818';
 
         $swCode = <<<JS
 self.addEventListener('install', () => self.skipWaiting());
@@ -153,7 +161,7 @@ self.addEventListener('fetch', (e) => {
                 <html lang="es">
                 <head>
                     <meta charset="UTF-8">
-                    <title>{$appName} Offline</title>
+                    <title>{$appNameHtml} Offline</title>
                     <style>
                         body { background:{$bgColor}; color:#fff; font-family:system-ui; display:flex; height:100vh; align-items:center; justify-content:center; margin:0; text-align:center; }
                         .c { background:#222; padding:2rem; border-radius:12px; max-width:380px; }
@@ -163,7 +171,7 @@ self.addEventListener('fetch', (e) => {
                 </head>
                 <body>
                     <div class="c">
-                        <h1>{$appName}</h1>
+                        <h1>{$appNameHtml}</h1>
                         <p>Sin conexión con el servidor.</p>
                         <button onclick="location.reload()">Reintentar</button>
                     </div>
@@ -177,7 +185,7 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
     if (!e.data) return;
 
-    let title = '{$appName}';
+    let title = '{$appNameJs}';
     let body = '';
     let rawUrl = '/';
     let icon = '/apps/pwa_suite/icon';
@@ -220,7 +228,9 @@ self.addEventListener('push', (e) => {
         }
     }
 
-    const resolvedUrl = new URL(rawUrl, self.location.origin).href;
+    // Validación de origen para evitar URLs externas arbitrarias en el payload
+    const rawTargetObj = new URL(rawUrl, self.location.origin);
+    const resolvedUrl = (rawTargetObj.origin === self.location.origin) ? rawTargetObj.href : self.location.origin;
 
     const mappedActions = actionsList.map((act, index) => ({
         action: act.action || ('action_' + index),
@@ -261,7 +271,9 @@ self.addEventListener('notificationclick', (e) => {
         }
     }
 
-    const resolvedTarget = new URL(targetUrl, self.location.origin).href;
+    // Blindaje contra Open Redirect / Tab Hijacking: solo navega dentro del mismo dominio
+    const targetObj = new URL(targetUrl, self.location.origin);
+    const resolvedTarget = (targetObj.origin === self.location.origin) ? targetObj.href : self.location.origin;
 
     e.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
