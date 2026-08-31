@@ -175,53 +175,107 @@ self.addEventListener('fetch', (e) => {
 });
 
 self.addEventListener('push', (e) => {
-    let title = '{$appName}';
-    let options = {
-        icon: '/apps/pwa_suite/icon',
-        badge: '/apps/pwa_suite/icon',
-        data: { url: '/' }
-    };
+    if (!e.data) return;
 
-    if (e.data) {
-        try {
-            const json = e.data.json();
-            title = json.title || json.subject || title;
-            options.body = json.body || json.message || '';
-            
-            const target = json.url || json.link || json.targetUrl;
-            if (target) options.data.url = target;
-            if (json.icon) options.icon = json.icon;
-            if (json.tag) options.tag = json.tag;
-        } catch (err) {
-            const text = e.data.text();
-            const lines = text.split('\\n');
-            if (lines.length > 1) {
-                title = lines[0];
-                options.body = lines.slice(1).join('\\n');
-            } else {
-                options.body = text;
-            }
+    let title = '{$appName}';
+    let body = '';
+    let rawUrl = '/';
+    let icon = '/apps/pwa_suite/icon';
+    let badge = '/apps/pwa_suite/icon';
+    let tag = 'nextcloud-notification';
+    let isPriority = false;
+    let actionsList = [];
+    let customVibrate = null;
+
+    try {
+        const json = e.data.json();
+        title = json.title || json.subject || title;
+        body = json.body || json.message || '';
+        rawUrl = json.targetUrl || json.url || json.link || '/';
+        icon = json.icon || icon;
+        badge = json.badge || badge;
+        tag = json.tag || json.id || tag;
+
+        isPriority = Boolean(
+            json.type === 'call' ||
+            (typeof tag === 'string' && tag.includes('spreed')) ||
+            json.requireInteraction
+        );
+
+        if (Array.isArray(json.actions)) {
+            actionsList = json.actions;
+        }
+
+        if (json.vibrate) {
+            customVibrate = json.vibrate;
+        }
+    } catch (err) {
+        const text = e.data.text();
+        const lines = text.split('\\n');
+        if (lines.length > 1) {
+            title = lines[0];
+            body = lines.slice(1).join('\\n');
+        } else {
+            body = text;
         }
     }
+
+    const resolvedUrl = new URL(rawUrl, self.location.origin).href;
+
+    const mappedActions = actionsList.map((act, index) => ({
+        action: act.action || ('action_' + index),
+        title: act.title || 'Ver',
+        icon: act.icon || undefined
+    }));
+
+    const options = {
+        body: body,
+        icon: icon,
+        badge: badge,
+        tag: tag,
+        renotify: true,
+        requireInteraction: isPriority,
+        vibrate: customVibrate || (isPriority ? [300, 100, 300, 100, 300] : [100, 50, 100]),
+        actions: mappedActions,
+        data: {
+            url: resolvedUrl,
+            actionsMap: actionsList
+        }
+    };
+
     e.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (e) => {
     e.notification.close();
-    const targetUrl = e.notification.data?.url || '/';
+
+    const notifData = e.notification.data || {};
+    let targetUrl = notifData.url || '/';
+
+    if (e.action && Array.isArray(notifData.actionsMap)) {
+        const selectedAction = notifData.actionsMap.find(
+            (a, i) => a.action === e.action || ('action_' + i) === e.action
+        );
+        if (selectedAction && (selectedAction.url || selectedAction.targetUrl)) {
+            targetUrl = selectedAction.url || selectedAction.targetUrl;
+        }
+    }
+
+    const resolvedTarget = new URL(targetUrl, self.location.origin).href;
 
     e.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let client of windowClients) {
-                if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    if ('navigate' in client && targetUrl !== '/') {
-                        client.navigate(targetUrl);
-                    }
-                    return client.focus();
+                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+                    return client.focus().then((focusedClient) => {
+                        if (focusedClient && 'navigate' in focusedClient) {
+                            return focusedClient.navigate(resolvedTarget);
+                        }
+                    });
                 }
             }
             if (clients.openWindow) {
-                return clients.openWindow(targetUrl);
+                return clients.openWindow(resolvedTarget);
             }
         })
     );
