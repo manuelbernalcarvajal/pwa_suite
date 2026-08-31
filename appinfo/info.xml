@@ -10,7 +10,7 @@
     - Registro y control de Service Worker personalizado.
     - Optimización de la experiencia de instalación en dispositivos móviles y de escritorio.
     ]]></description>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <licence>agpl</licence>
     <author>Manuel Bernal Carvajal</author>
     <namespace>PwaSuite</namespace>
