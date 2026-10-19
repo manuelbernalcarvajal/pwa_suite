@@ -15,21 +15,21 @@
                 if (currentUrl.includes('pwa_suite')) {
                     pwaSuiteExists = true;
                 } else {
-                    // Service Worker from another app detected: mark it for removal
+                    // Detectado Service Worker de otra app: marcar para eliminar
                     alienRegistrations.push(reg.unregister());
                 }
             }
 
-            // 1. Remove foreign Service Workers in the background
+            // 1. Si hay Service Workers ajenos, los eliminamos en segundo plano
             Promise.all(alienRegistrations).then(function () {
-                // 2. Register PWA Suite if it isn't registered/controlling the instance yet
+                // 2. Si PWA Suite aún no estaba registrado o controlando la instancia, se registra
                 if (!pwaSuiteExists) {
                     navigator.serviceWorker.register(swUrl, { scope: '/' })
                         .then(function (reg) {
-                            console.log('[PWA Suite] Master Service Worker registered with scope:', reg.scope);
+                            console.log('[PWA Suite] Service Worker maestro registrado con éxito en scope:', reg.scope);
                         })
                         .catch(function (err) {
-                            console.warn('[PWA Suite] Error registering master Service Worker:', err);
+                            console.warn('[PWA Suite] Error registrando SW maestro:', err);
                         });
                 }
             });

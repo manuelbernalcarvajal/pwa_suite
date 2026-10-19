@@ -2,24 +2,22 @@
 
 # PWA Suite & Customizer for Nextcloud
 
-Turns any Nextcloud 34/35 instance into a fully installable and customizable Progressive Web App (PWA), configured straight from the admin settings.
+Transforma cualquier instancia de Nextcloud 34 en una Progressive Web App (PWA) totalmente instalable y personalizable directamente desde la interfaz de administración.
 
-## Features
-* **Dynamic manifest:** change the app name, interface colors and background colors.
-* **Per-app PWAs:** pages of a Nextcloud app link `manifest.json?app=<app>`, which gets `id` and `start_url` set to `/apps/<app>/`. Each app (Calendar, Mail, Talk, …) can therefore be installed as its own PWA, also via Edge/Chrome's `WebAppInstallForceList` policy, instead of all apps collapsing into one. This also applies to the expert-mode custom manifest.
-* **Automated Service Worker:** registered transparently, without touching core files.
-* **Native integration:** settings panel built into Nextcloud's Theming admin section.
-* **Translatable:** English source strings, Spanish included (`l10n/`).
+## Características
+* **Manifest Dinámico:** Modifica el nombre de la app, colores de interfaz y colores de fondo.
+* **Service Worker Automatizado:** Registro transparente sin tocar archivos del core.
+* **Integración Nativa:** Panel de ajustes integrado en la sección de Seguridad de Nextcloud.
 
-## 🛠️ Maintenance and contributions
+## 🛠️ Mantenimiento y Contribuciones
 
-This is a personal project maintained on a voluntary basis.
+Este es un proyecto personal mantenido de forma voluntaria. 
 
-- **Update cycle:** I update the app periodically, in step with updating my own Nextcloud instance (usually for stability, when that version reaches end of life).
-- **Version support:** if a new Nextcloud version comes out (e.g. Nextcloud 36, 37…) and you need compatibility before I update my server, **pull requests are very welcome**. If you test the app and confirm compatibility, I'll gladly merge the change and publish a new release.
-- If you verify that versions older than 34 are compatible, let me know and I'll lower the minimum (it started at 34 because that's the version I use and tested with).
+- **Ciclo de actualizaciones:** Suelo actualizar la app periódicamente coincidiendo con la actualización de mi propia instancia de Nextcloud (normalmente por estabilidad cuando se agota la vida de esa version).
+- **Soporte de versiones:** Si sale una nueva versión de Nextcloud (ej. Nextcloud 35, 36...) y necesitas compatibilidad antes de que yo actualice mi servidor, **los Pull Requests son totalmente bienvenidos**. Si testeas la app y confirmas compatibilidad, estaré encantado de fusionar el cambio y publicar una nueva versión.
+- Si verificas que las versiones anteriores a la 34 son compatibles indícalo y le bajo el min a esa versión (nace con la 34 dado que es la que uso actualmente y con la que he testado).
 
-## License
+## Licencia
 AGPL-3.0
 
 ```
@@ -30,13 +28,10 @@ pwa_suite/
 │   ├── info.xml
 │   └── routes.php
 ├── css/
-│   └── admin-style.css
+│   └── admin-style.css      
 ├── js/
-│   ├── admin-script.js
+│   ├── admin-script.js      
 │   └── pwa-register.js
-├── l10n/
-│   ├── es.js
-│   └── es.json
 ├── lib/
 │   ├── AppInfo/
 │   │   └── Application.php
