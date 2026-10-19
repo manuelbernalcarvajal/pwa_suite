@@ -1,7 +1,5 @@
 (function () {
-    const t = (text) => (window.t ? window.t('pwa_suite', text) : text);
-
-    // Expert mode toggle
+    // Modo Experto Toggle
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'pwa-advanced-toggle') {
             const section = document.getElementById('pwa-advanced-section');
@@ -9,7 +7,7 @@
         }
     });
 
-    // Instant preview when an icon is selected
+    // Preview inmediato al seleccionar icono
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'pwa-icon-file') {
             const file = e.target.files[0];
@@ -24,7 +22,7 @@
         }
     });
 
-    // Save changes
+    // Guardar cambios
     document.addEventListener('click', function (e) {
         if (e.target && e.target.id === 'pwa-save-btn') {
             e.preventDefault();
@@ -33,7 +31,7 @@
             const fileInput = document.getElementById('pwa-icon-file');
 
             if (msg) {
-                msg.textContent = t('Saving…');
+                msg.textContent = 'Guardando...';
                 msg.style.color = 'var(--color-text-maxcontrast, #fff)';
             }
 
@@ -49,7 +47,7 @@
 
             const uploadPromises = [];
 
-            // 1. If a new icon file was chosen, upload it first
+            // 1. Si se eligió un archivo nuevo de icono, se sube primero
             if (fileInput && fileInput.files.length > 0) {
                 const formData = new FormData();
                 formData.append('pwa_icon', fileInput.files[0]);
@@ -59,14 +57,14 @@
                     headers: { 'requesttoken': OC.requestToken },
                     body: formData
                 }).then(res => {
-                    if (!res.ok) throw new Error(t('Error uploading the icon'));
+                    if (!res.ok) throw new Error('Error al subir el icono');
                     return res.json();
                 });
 
                 uploadPromises.push(iconUpload);
             }
 
-            // 2. Save the remaining text/color settings
+            // 2. Guardar el resto de configuración de texto/colores
             const configSave = fetch(OC.generateUrl('/apps/pwa_suite/api/v1/admin/config'), {
                 method: 'POST',
                 headers: {
@@ -75,7 +73,7 @@
                 },
                 body: JSON.stringify(payload)
             }).then(res => {
-                if (!res.ok) throw new Error(t('Error saving settings'));
+                if (!res.ok) throw new Error('Error al guardar configuración');
                 return res.json();
             });
 
@@ -84,7 +82,7 @@
             Promise.all(uploadPromises)
                 .then(() => {
                     if (msg) {
-                        msg.textContent = t('Settings saved successfully!');
+                        msg.textContent = '¡Ajustes e icono guardados correctamente!';
                         msg.style.color = '#46ba61';
                         setTimeout(() => { msg.textContent = ''; }, 3500);
                     }
@@ -92,7 +90,7 @@
                 .catch(err => {
                     console.error('[PWA Suite Error]', err);
                     if (msg) {
-                        msg.textContent = t('Error:') + ' ' + err.message;
+                        msg.textContent = 'Error: ' + err.message;
                         msg.style.color = '#e9322d';
                     }
                 });
