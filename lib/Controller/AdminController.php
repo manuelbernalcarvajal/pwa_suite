@@ -30,6 +30,7 @@ class AdminController extends Controller {
             'themeColor' => 'theme_color',
             'bgColor' => 'bg_color',
             'displayMode' => 'display_mode',
+            'perAppPwa' => 'per_app_pwa', 
             'advancedMode' => 'advanced_mode',
             'customManifest' => 'custom_manifest',
             'customSw' => 'custom_sw',
