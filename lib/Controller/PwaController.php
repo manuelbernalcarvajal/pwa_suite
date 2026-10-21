@@ -138,6 +138,11 @@ class PwaController extends Controller {
         $overrides = isset($manifest['apps']) && is_array($manifest['apps']) ? $manifest['apps'] : [];
         unset($manifest['apps']);
 
+        // Si la opción no está activa, mantener la PWA unificada central
+        if ($this->appConfig->getValueString('pwa_suite', 'per_app_pwa', 'no') !== 'yes') {
+            return $manifest;
+        }
+
         $app = strtolower($app !== '' ? $app : (string)$this->request->getParam('app', ''));
         if ($app === 'core' || !preg_match('/^[a-z0-9_]+$/', $app)) {
             return $manifest;
