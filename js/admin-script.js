@@ -42,7 +42,7 @@
                 themeColor: document.getElementById('pwa-theme-color')?.value || '#181818',
                 bgColor: document.getElementById('pwa-bg-color')?.value || '#181818',
                 displayMode: document.getElementById('pwa-display-mode')?.value || 'standalone',
-                perAppPwa: perAppToggle && perAppToggle.checked ? 'yes' : 'no',
+                perAppPwa: document.getElementById('pwa-per-app-toggle')?.checked ? 'yes' : 'no',
                 advancedMode: toggle && toggle.checked ? 'yes' : 'no',
                 customManifest: document.getElementById('pwa-custom-manifest')?.value || '',
                 customSw: document.getElementById('pwa-custom-sw')?.value || ''
