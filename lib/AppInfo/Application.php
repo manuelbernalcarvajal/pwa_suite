@@ -28,38 +28,39 @@ class Application extends App {
             exit;
         }
 
-        // 2. Intercept the manifest
+        // 2. Intercepción de Manifest
         if (
             str_contains($uri, 'theming/manifest') ||
             str_contains($uri, '/manifest.json') ||
-            preg_match('/\/manifest(\/|\?|$)/i', $uri)
+            str_ends_with($uri, '/manifest.webmanifest')
         ) {
+            $container = $this->getContainer();
+            /** @var \OCP\IAppConfig $appConfig */
+            $appConfig = $container->get(\OCP\IAppConfig::class);
+            $perAppEnabled = $appConfig->getValueString('pwa_suite', 'per_app_pwa', 'no') === 'yes';
+
             /** @var PwaController $controller */
-            $controller = $this->getContainer()->get(PwaController::class);
-            // Nextcloud's own manifest URL carries the app id (/apps/theming/manifest/<appid>).
-            // Pages often still link that URL, so take the app from it to keep per-app manifests
-            // working even when the <link> rewrite below doesn't apply.
-            $manifestApp = preg_match('#/theming/manifest/([a-z0-9_]+)#i', $uri, $m) ? $m[1] : '';
+            $controller = $container->get(PwaController::class);
+            
+            $manifestApp = ($perAppEnabled && preg_match('#/theming/manifest/([a-z0-9_]+)#i', $uri, $m)) ? $m[1] : '';
             $response = $controller->getManifest($manifestApp);
 
             header('Content-Type: application/manifest+json; charset=utf-8');
             header('Cache-Control: no-cache, no-store, must-revalidate');
-
-            echo json_encode($response->getData(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            echo $response->getData();
             exit;
         }
 
-        // 3. Inject into the HTML head and load the Service Worker
+        // 3. Inyección en cabeceras HTML y carga del Service Worker
         if (!str_starts_with($uri, '/remote.php') && !str_starts_with($uri, '/ocs/')) {
             $container = $this->getContainer();
+            /** @var \OCP\IAppConfig $appConfig */
+            $appConfig = $container->get(\OCP\IAppConfig::class);
+            $perAppEnabled = $appConfig->getValueString('pwa_suite', 'per_app_pwa', 'no') === 'yes';
             
-            // Load the script that registers the Service Worker
             Util::addScript('pwa_suite', 'pwa-register');
 
-            // The app this page belongs to (/apps/calendar/... or /login?redirect_url=/apps/calendar/...),
-            // so every Nextcloud app gets its own manifest (id/start_url) and can be installed
-            // as a separate PWA.
-            $pageApp = preg_match('#/apps/([a-z0-9_]+)#i', urldecode($uri), $m) ? strtolower($m[1]) : '';
+            $pageApp = ($perAppEnabled && preg_match('#/apps/([a-z0-9_]+)#i', urldecode($uri), $m)) ? strtolower($m[1]) : '';
 
             ob_start(function (?string $buffer) use ($container, $pageApp) {
                 if ($buffer === null || $buffer === '' || !str_contains($buffer, '<html')) {
