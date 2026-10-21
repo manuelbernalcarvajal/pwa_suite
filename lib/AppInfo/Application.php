@@ -32,7 +32,7 @@ class Application extends App {
         if (
             str_contains($uri, 'theming/manifest') ||
             str_contains($uri, '/manifest.json') ||
-            str_ends_with($uri, '/manifest.webmanifest')
+            str_contains($uri, 'manifest.webmanifest')
         ) {
             $container = $this->getContainer();
             /** @var \OCP\IAppConfig $appConfig */
@@ -47,7 +47,7 @@ class Application extends App {
 
             header('Content-Type: application/manifest+json; charset=utf-8');
             header('Cache-Control: no-cache, no-store, must-revalidate');
-            echo $response->getData();
+            echo json_encode($response->getData(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             exit;
         }
 
