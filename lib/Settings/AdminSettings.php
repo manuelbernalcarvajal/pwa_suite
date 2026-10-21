@@ -30,6 +30,7 @@ class AdminSettings implements ISettings {
             'themeColor' => $this->get('theme_color', '#181818'),
             'bgColor' => $this->get('bg_color', '#181818'),
             'displayMode' => $this->get('display_mode', 'standalone'),
+            'perAppPwa' => $this->get('per_app_pwa', 'no'),
             'advancedMode' => $this->get('advanced_mode', 'no'),
             'customManifest' => $this->get('custom_manifest', ''),
             'customSw' => $this->get('custom_sw', ''),

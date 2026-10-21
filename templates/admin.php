@@ -20,6 +20,11 @@
     </div>
 
     <div class="pwa-field-group" style="margin-top: 15px;">
+        <input type="checkbox" id="pwa-per-app-toggle" <?php if ($_['perAppPwa'] === 'yes') p('checked'); ?> />
+        <label for="pwa-per-app-toggle"><?php p($l->t('Enable separate PWA per Nextcloud app (Calendar, Talk, etc.)')); ?></label>
+    </div>
+    
+    <div class="pwa-field-group" style="margin-top: 15px;">
         <label for="pwa-theme-color"><?php p($l->t('Theme color:')); ?></label>
         <input type="color" id="pwa-theme-color" value="<?php p($_['themeColor']); ?>" />
     </div>
