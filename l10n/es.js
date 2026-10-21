@@ -31,6 +31,7 @@ OC.L10N.register(
         "No connection to the server.": "Sin conexión con el servidor.",
         "Retry": "Reintentar",
         "View": "Ver",
+        "Enable separate PWA per Nextcloud app (Calendar, Talk, etc.)": "Habilitar PWA independiente por aplicación (Calendario, Talk, etc.)",
         "Optional: an \"apps\" object with per-app overrides keyed by app id (e.g. \"spreed\" for Talk) is merged into the manifest of that app, e.g. \"apps\": { \"spreed\": { \"name\": \"Talk\", \"icons\": [...] } }.": "Opcional: un objeto \"apps\" con ajustes por app, indexado por id de app (p. ej. \"spreed\" para Talk), se combina con el manifest de esa app, p. ej. \"apps\": { \"spreed\": { \"name\": \"Talk\", \"icons\": [...] } }."
     },
     "nplurals=2; plural=(n != 1);");
